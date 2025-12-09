@@ -1,0 +1,5 @@
+streamlit>=1.39.0
+pandas
+PyMuPDF
+openai>=1.0.0
+langchain_ollama

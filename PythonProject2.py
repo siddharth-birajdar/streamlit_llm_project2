@@ -3,121 +3,122 @@ import fitz  # PyMuPDF
 import re
 from langchain_ollama import ChatOllama
 
-# Initialize LLM with a lower temperature for factual extraction
+# Initialize LLM
 llm = ChatOllama(
     model="llama3.2",
     temperature=0
 )
 
+# --- HELPER FUNCTION: REGEX EXTRACTION ---
 def extract_abbreviation_context(full_text):
     """
-    Optimized extraction function. 
-    1. Finds patterns like (WDC), (SH), (IPC4).
-    2. Grabs 100 characters BEFORE and AFTER the match to catch definitions.
+    Finds abbreviations like (WDC) and grabs surrounding context
+    to help the AI define them accurately.
     """
     pattern = re.compile(r"\(([A-Z]{2,}[A-Za-z0-9]*)\)")
-    
     relevant_chunks = []
     
-    # Iterate through all matches in the text
     for match in pattern.finditer(full_text):
         start, end = match.span()
-        
-        # Expand window: 100 chars before and 100 chars after
+        # Grab 100 chars before and after
         context_start = max(0, start - 100)
         context_end = min(len(full_text), end + 100)
-        
-        # Clean up newlines so the context flows better for the LLM
         chunk = full_text[context_start:context_end].replace('\n', ' ')
         relevant_chunks.append(chunk)
             
-    # Join chunks with a separator
     return " ... ".join(relevant_chunks)
 
-st.title("Python Project 2: Abbreviation Indexer")
+# --- APP LAYOUT ---
+st.title("Python Project 2: Web-Based LLM App")
 st.header("MSIS 5193")
 st.subheader("Team")
 st.text("""
 -Chinmay Deshpande
--Dheeursa Tiwari
+-Dheerusha Tiwari
 -Kazi Armaan Ahmed
 -Siddharth Birajdar
 """)
 
-# Store full_text in session state so it's accessible for the Q&A section
+# Initialize session state to hold the document text
 if 'full_text' not in st.session_state:
     st.session_state.full_text = ""
 
-# --- FILE UPLOAD SECTION ---
-with st.form(key='file_upload_form'):
-    file = st.file_uploader("Upload Article (PDF)", type=['pdf'], key=2)
-    submit_button = st.form_submit_button(label='Generate Abbreviation Index')
+# --- SECTION 1: UPLOAD & SUBMIT CONTEXT ---
+st.markdown("### 1. Upload Document")
+uploaded_file = st.file_uploader("Upload PDF", type=['pdf'], key="main_uploader")
 
-if submit_button and file is not None:
-    st.success(f"File '{file.name}' submitted successfully!")
-    
-    # 1. Read PDF Content
-    pdf_data = file.read()
-    with fitz.open(stream=pdf_data, filetype=file.type) as doc:
-        text_content = ""
-        for page in doc:
-            text_content += page.get_text()
-    
-    # Save to session state for the Q&A section
-    st.session_state.full_text = text_content
+# BUTTON 1: Submit File (Just loads context, does NOT generate index)
+if st.button("Submit File for Context"):
+    if uploaded_file is not None:
+        with st.spinner('Reading file...'):
+            # Read PDF
+            pdf_data = uploaded_file.read()
+            with fitz.open(stream=pdf_data, filetype=uploaded_file.type) as doc:
+                text_content = ""
+                for page in doc:
+                    text_content += page.get_text()
+            
+            # Save to session state
+            st.session_state.full_text = text_content
+            st.success(f"File '{uploaded_file.name}' loaded successfully! You can now ask questions below.")
+    else:
+        st.warning("Please select a file first.")
 
-    # 2. Optimization: Filter Text using Regex
-    with st.spinner('Scanning document for abbreviations...'):
-        filtered_context = extract_abbreviation_context(text_content)
+# --- SECTION 2: GENERATE ABBREVIATIONS (OPTIONAL) ---
+st.markdown("### 2. Tools")
+# BUTTON 2: Generate Index (Separate action)
+if st.button("Generate Abbreviation Index"):
+    # Check if context exists in session state
+    if st.session_state.full_text:
         
-        # Fallback: If no abbreviations found, use the first 2000 chars
-        if len(filtered_context) < 10:
-            filtered_context = text_content[:2000]
+        with st.spinner('Scanning for abbreviations...'):
+            # 1. Regex Optimization
+            filtered_context = extract_abbreviation_context(st.session_state.full_text)
+            
+            # Fallback if no abbreviations found
+            if len(filtered_context) < 10:
+                filtered_context = st.session_state.full_text[:2000]
 
-    st.info(f"Optimization: Processing {len(filtered_context)} characters (filtered down from {len(text_content)}).")
+            st.info(f"Optimization: Extracted {len(filtered_context)} chars for processing.")
 
-    # 3. Define Prompt with Strict Formatting Rules
-    # --- CHANGE: Added bullet point instruction to force vertical list format ---
-    prompt = """
-    You are a technical editor. Read the context text below. 
-    Identify technical abbreviations and their full definitions found IN THE TEXT.
-    
-    Rules:
-    1. Format the output as a Markdown bulleted list.
-    2. Example format:
-       * **WDC**: Weighted Degree Centrality
-       * **SH**: Structural Holes
-    3. If the text does not define the abbreviation (e.g. it is just a tool name like MPNet with no description), DO NOT include it.
-    4. Ignore citations like (Author, Year) or figures like (Fig. 1).
-    5. Do not leave any definition blank.
-    
-    Context:
-    """
-    
-    # 4. Invoke LLM
-    with st.spinner('Generating Index...'):
-        ai_msg = llm.invoke(prompt + filtered_context)
-    
-    st.header("Abbreviation Index")
-    
-    # Using markdown ensures the bullet points render correctly
-    st.markdown(ai_msg.content)
+            # 2. AI Prompt
+            prompt = """
+            You are a technical editor. Read the context text below. 
+            Identify technical abbreviations and their full definitions found IN THE TEXT.
+            
+            Rules:
+            1. Format the output as a Markdown bulleted list.
+            2. Example format:
+               * **WDC**: Weighted Degree Centrality
+            3. If the text does not define the abbreviation, DO NOT include it.
+            4. Ignore citations like (Author, Year).
+            
+            Context:
+            """
+            
+            # 3. Invoke LLM
+            ai_msg = llm.invoke(prompt + filtered_context)
+            
+            st.markdown("#### Abbreviation Index")
+            st.markdown(ai_msg.content)
+            
+    else:
+        st.error("No document context found. Please upload and click 'Submit File for Context' first.")
 
-elif submit_button and file is None:
-    st.warning("Please upload a file before submitting.")
-
-# --- Q&A SECTION ---
+# --- SECTION 3: Q&A ---
 st.markdown("---")
-st.header("Ask a Question about the Document")
+st.markdown("### 3. Ask a Question")
 question = st.text_input("Input your Question:")
 
 if question:
     if st.session_state.full_text:
-        st.header("AI Response")
-        context_to_send = st.session_state.full_text[:10000] 
+        # Use the stored text for Q&A
+        context_to_send = st.session_state.full_text[:10000] # Limit to avoid context overflow
         
-        with st.spinner('Thinking...'):
+        with st.spinner('AI is thinking...'):
             ai_msg = llm.invoke(f"Context: {context_to_send}\n\nQuestion: {question}")
+        
+        st.markdown("#### AI Response")
         st.write(ai_msg.content)
     else:
-        st.error("Please upload and submit a document first.")
+        st.error("Please submit a document in Section 1 first.")

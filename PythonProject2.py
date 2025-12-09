@@ -107,4 +107,14 @@ if question:
         st.markdown("#### AI Response")
         st.write(ai_msg)
     else:
-        st.error("Please submit a document first.")
+        with st.spinner('Thinking...'):
+            completion = client.chat.completions.create(
+                model="gemini-2.5-flash",
+                messages=[
+                    {"role": "system", "content": "You answer questions based on document context."},
+                    {"role": "user", "content": f"{question}"}
+                ]
+            )
+            ai_msg = completion.choices[0].message.content
+        st.markdown("#### AI Response")
+        st.write(ai_msg)

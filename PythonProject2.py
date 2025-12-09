@@ -21,7 +21,7 @@ st.text("""
 """)
 
 
-st.write(st.secrets.openai.my_api_key)
+st.write(st.secrets)
 # form variables create earlier
 with st.form(key='file_upload_form'):
 

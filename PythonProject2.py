@@ -58,7 +58,7 @@ if submit_button:
             ]
         )
 
-        st.write(completion.choices[0].message["content"])
+        st.write(response.choices[0].message.content)
 
     else:
         st.warning("Please upload a file before submitting.")

@@ -4,7 +4,7 @@ import fitz
 from openai import OpenAI
 
 # Load API key from Streamlit secrets
-api_key = st.secrets.openaiDetails.my_api_key
+api_key = st.secrets.openai.my_api_key
 
 # Initialize OpenAI client
 client = OpenAI(api_key=api_key)

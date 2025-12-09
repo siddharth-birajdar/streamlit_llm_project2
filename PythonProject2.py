@@ -79,7 +79,7 @@ if submit_button and question:
         ]
     )
 
-    st.write(completion.choices[0].message["content"])
+    st.write(response.choices[0].message.content)
 
 elif question:
     st.header("AI Response")
@@ -91,6 +91,6 @@ elif question:
         ]
     )
 
-    st.write(completion.choices[0].message["content"])
+    st.write(response.choices[0].message.content)
 
  

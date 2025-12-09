@@ -123,6 +123,6 @@ if question:
     else:
         with st.spinner('AI is thinking...'):
             ai_msg = llm.invoke(f"Question: {question}")
-            
-            st.markdown("#### AI Response")
-            st.write(ai_msg.content)
+        
+        st.markdown("#### AI Response")
+        st.write(ai_msg.content)

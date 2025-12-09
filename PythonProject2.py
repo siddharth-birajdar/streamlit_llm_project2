@@ -111,7 +111,7 @@ if question:
             completion = client.chat.completions.create(
                 model="gemini-2.5-flash",
                 messages=[
-                    {"role": "system", "content": "You answer questions based on document context."},
+                    {"role": "system", "content": "You answer questions based on document context. If not available, state that and answer."},
                     {"role": "user", "content": f"{question}"}
                 ]
             )

@@ -121,8 +121,4 @@ if question:
         st.markdown("#### AI Response")
         st.write(ai_msg.content)
     else:
-        with st.spinner('AI is thinking...'):
-            ai_msg = llm.invoke(f"Question: {question}")
-        
-        st.markdown("#### AI Response")
-        st.write(ai_msg.content)
+        st.error("Please submit a document in Section 1 first.")

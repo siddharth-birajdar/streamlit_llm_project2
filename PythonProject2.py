@@ -58,7 +58,7 @@ if submit_button:
             ]
         )
 
-        st.write(response.choices[0].message.content)
+        st.write(completion.choices[0].message.content)
 
     else:
         st.warning("Please upload a file before submitting.")
@@ -69,7 +69,7 @@ st.header("Input your question")
 question = st.text_input("Input your Question:")
 
 if submit_button and question:
-    st.header("AI Response")
+    st.header("AI completion")
 
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -79,10 +79,10 @@ if submit_button and question:
         ]
     )
 
-    st.write(response.choices[0].message.content)
+    st.write(completion.choices[0].message.content)
 
 elif question:
-    st.header("AI Response")
+    st.header("AI completion")
 
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -91,6 +91,6 @@ elif question:
         ]
     )
 
-    st.write(response.choices[0].message.content)
+    st.write(completion.choices[0].message.content)
 
  
